@@ -1,3 +1,5 @@
+Whether you're in an area with minimal broadband, or wicked fast wi fi, this app is accessible to play regardless of service or provider.
+
 [BoomRockChess_README.md](https://github.com/user-attachments/files/29783785/BoomRockChess_README.md)
 # BoomRock Chess
 
