@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a0000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BoomRock Chess">
+<meta name="description" content="BoomRock Chess — every piece plays a musical note. Lawrence lives on d4.">
+<link rel="apple-touch-icon" id="ati">
+<link rel="manifest" id="mfst">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<title>BoomRock Chess</title>
+<style>
+:root{
+  --sq:54px;
+  --dark:#7a1a1a;--light:#F0D9B5;--bb:#4a1010;
+  --bg:#080808;--s1:#181818;--s2:#222;--bdr:#2e2e2e;
+  --txt:#eeeeee;--txt2:#999;--txt3:#555;
+  --grn:#3ef03e;--red:#f03e3e;--acc:#8b2020;
+  color-scheme:dark;
+}
+@media(max-width:860px){:root{--sq:48px}}
+@media(max-width:680px){:root{--sq:44px}}
+@media(max-width:520px){:root{--sq:min(42px,calc((100vw - 16px)/8))}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow-x:hidden}
+
+/* Install banner */
+#ibanner{display:none;position:sticky;top:0;z-index:200;background:#110000;border-bottom:1px solid var(--acc);padding:10px 14px;align-items:center;gap:10px;flex-wrap:wrap}
+#ibanner p{flex:1;font-size:12px;color:var(--txt2);min-width:140px}
+.ib-btn{font-size:12px;padding:6px 13px;border-radius:20px;cursor:pointer;border:none;background:var(--acc);color:#fff;white-space:nowrap}
+.ib-x{background:transparent;border:1px solid var(--bdr);color:var(--txt3);padding:6px 10px;border-radius:20px;cursor:pointer;font-size:12px}
+
+/* Main layout */
+#wr{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 8px max(24px,env(safe-area-inset-bottom))}
+#title{
+  font-family:'Bangers',cursive;
+  font-size:clamp(32px,6vw,54px);
+  letter-spacing:4px;
+  color:#ff2200;
+  text-align:center;
+  padding-top:4px;
+  line-height:1;
+  text-shadow:
+    3px  3px 0 #000,
+   -2px -2px 0 #000,
+    2px -2px 0 #000,
+   -2px  2px 0 #000,
+    4px  4px 8px rgba(0,0,0,.7);
+}
+.byline{
+  font-family:'Bangers',cursive;
+  font-size:clamp(11px,2.2vw,15px);
+  letter-spacing:2px;
+  color:#cc6622;
+  text-align:center;
+  padding:3px 6px;
+  text-shadow:1px 1px 0 #000,-1px -1px 0 #000;
+  line-height:1.2;
+}
+
+/* Time control */
+#tc{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
+#tc .lbl{font-size:10px;color:var(--txt3);margin-right:2px}
+.tcb{font-size:11px;padding:5px 9px;border-radius:20px;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--txt2);transition:all .15s}
+.tcb.act{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* Game area */
+#ga{display:flex;gap:10px;justify-content:center;align-items:flex-start;flex-wrap:wrap;width:100%}
+
+/* Board column */
+#bcol{display:flex;flex-direction:column;gap:4px;width:calc(var(--sq)*8 + 6px)}
+
+/* Clocks */
+.clk{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;border:1px solid var(--bdr);background:var(--s1);transition:background .3s,border-color .3s}
+.clk.active{border-color:#2a5c2a;background:#0b1a0b}
+.clk.low{border-color:#5c1a1a;background:#1a0808;animation:blink 1s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.7}}
+.clk-l{display:flex;align-items:center;gap:5px;overflow:hidden}
+.clk-sym{font-size:17px;flex-shrink:0}
+.clk-who{font-size:10px;color:var(--txt3);font-family:monospace;flex-shrink:0}
+.clk-cap{font-size:11px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.clk-r{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.clk-adv{font-size:10px;font-weight:600;min-width:22px;text-align:right;color:var(--grn)}
+.clk-time{font-size:20px;font-family:monospace;font-weight:600;color:var(--txt2);min-width:52px;text-align:right;letter-spacing:1px}
+.clk.active .clk-time{color:var(--grn)}
+.clk.low .clk-time{color:var(--red)}
+
+/* Board */
+#bwrap{position:relative;display:inline-block}
+#board{display:grid;grid-template-columns:repeat(8,var(--sq));grid-template-rows:repeat(8,var(--sq));border:3px solid var(--bb);border-radius:3px}
+.sq{width:var(--sq);height:var(--sq);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:calc(var(--sq)*.6);user-select:none;touch-action:manipulation}
+.sq.light{background:var(--light)}.sq.dark{background:var(--dark)}
+.sq.sel{background:#f6f669!important}
+.sq.lastf{background:rgba(80,180,0,.3)!important}
+.sq.lastt{background:rgba(80,180,0,.3)!important}
+.sq.vm::after{content:'';position:absolute;width:calc(var(--sq)*.36);height:calc(var(--sq)*.36);border-radius:50%;background:rgba(0,0,0,.2);pointer-events:none;z-index:2}
+.sq.vc{background:rgba(210,70,0,.5)!important}
+.sq.chk{background:rgba(240,30,30,.5)!important}
+/* Base piece */
+.piece{position:relative;z-index:3;line-height:1}
+
+/* White pieces — ivory with a dark outline so they read on light squares */
+.piece-w{
+  color:#f5f2e8;
+  -webkit-text-stroke:1.5px #2a2218;
+  paint-order:stroke fill;
+  filter:
+    drop-shadow(0 2px 4px rgba(0,0,0,.85))
+    drop-shadow(0 0 1px rgba(0,0,0,.6));
+}
+
+/* Black pieces — deep black with a white shine top-left */
+.piece-b{
+  color:#111;
+  -webkit-text-stroke:0.5px #000;
+  paint-order:stroke fill;
+  text-shadow:
+    -2px -3px 2px rgba(255,255,255,.55),
+    -1px -1px 1px rgba(255,255,255,.30),
+     0px -2px 3px rgba(255,255,255,.18),
+     2px  3px 4px rgba(0,0,0,.8);
+  filter:
+    drop-shadow(0 2px 4px rgba(0,0,0,.7))
+    drop-shadow(-1px -2px 2px rgba(255,255,255,.2));
+}
+.coord{position:absolute;font-size:max(7px,calc(var(--sq)*.12));font-weight:700;opacity:.6;pointer-events:none;font-family:monospace}
+.coord.r{top:1px;left:2px}.coord.f{bottom:1px;right:2px}
+.sq.dark .coord{color:var(--light)}.sq.light .coord{color:var(--dark)}
+
+/* Promo overlay */
+#po{display:none;position:absolute;inset:0;background:rgba(0,0,0,.65);z-index:30;align-items:center;justify-content:center;border-radius:3px}
+#pb{background:var(--s2);border:2px solid var(--acc);border-radius:12px;padding:14px;text-align:center}
+#pb p{font-size:12px;color:var(--txt2);margin-bottom:10px}
+#pch{display:flex;gap:10px}
+.ppc{font-size:calc(var(--sq)*.52);cursor:pointer;padding:5px;border-radius:8px;border:1px solid var(--bdr);background:var(--s1);line-height:1}
+.ppc:hover,.ppc:active{background:var(--acc)}
+
+/* Lawrence hover tooltip */
+#ltip{
+  display:none;position:absolute;z-index:110;pointer-events:none;
+  background:#1a0828;color:#e8d0ff;
+  border:1.5px solid #8b4db8;border-radius:9px;
+  padding:7px 14px;white-space:nowrap;
+  font-family:'Bangers',cursive;font-size:14px;letter-spacing:1.8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.8),0 0 0 1px rgba(139,77,184,.25);
+  text-shadow:0 1px 3px rgba(0,0,0,.7);
+}
+#ltip::after{
+  content:'';position:absolute;left:18px;top:100%;
+  border:6px solid transparent;border-top-color:#8b4db8;
+}
+
+/* Float note */
+@keyframes fn{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-44px) scale(1.5)}}
+.fn{position:absolute;pointer-events:none;z-index:60;animation:fn .9s ease-out forwards;font-size:calc(var(--sq)*.28)}
+
+/* Side panel */
+#side{width:min(236px,calc(100vw - 16px));display:flex;flex-direction:column;gap:8px}
+.panel{background:var(--s1);border-radius:10px;padding:10px 12px;border:.5px solid var(--bdr)}
+.plbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+#stxt{font-size:13px;font-weight:500;color:var(--txt)}
+
+/* Tabs */
+#tabs{display:flex;gap:4px}
+.tb{flex:1;font-size:11px;padding:6px 3px;border-radius:8px;cursor:pointer;border:.5px solid var(--bdr);background:transparent;color:var(--txt2);transition:all .15s}
+.tb.act{background:var(--acc);border-color:var(--acc);color:#fff}
+.tab-p{display:none;flex-direction:column;gap:7px}
+.tab-p.show{display:flex}
+
+/* Score */
+.srow{display:flex;align-items:center;gap:6px;padding:2px 0}
+.ssym{font-size:14px}.sname{font-size:11px;color:var(--txt3);width:32px}
+.spieces{font-size:11px;flex:1;line-height:1.4}.spts{font-size:11px;font-weight:600;width:30px;text-align:right;color:var(--txt)}
+.advw{height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;position:relative}
+.advb{height:100%;border-radius:3px;transition:all .4s;position:absolute;top:0}
+.nleg{display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:9px;color:var(--txt3);font-family:monospace}
+
+/* Moves */
+#mlog{font-size:10px;font-family:monospace;color:var(--txt2);max-height:170px;overflow-y:auto;line-height:1.8}
+.mn{color:var(--txt3)}
+
+/* Chat */
+#cmsgs{max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.cmsg{font-size:11px;padding:5px 9px;border-radius:9px;max-width:92%;word-break:break-word;line-height:1.4}
+.cmsg.w{background:#162216;align-self:flex-start;color:#bbb}
+.cmsg.b{background:#161622;align-self:flex-end;color:#bbb}
+.cmeta{font-size:9px;color:var(--txt3);margin-bottom:1px}
+#cinr{display:flex;gap:4px}
+#ci{flex:1;font-size:11px;padding:7px 9px;border:.5px solid var(--bdr);border-radius:8px;background:var(--s2);color:var(--txt);outline:none}
+#ci:focus{border-color:var(--acc)}
+
+/* Camera */
+#cvid{width:100%;border-radius:8px;border:1px solid var(--bdr);background:#0a0a0a;min-height:110px;display:block}
+
+/* Buttons */
+button{border:.5px solid var(--bdr);background:var(--s2);color:var(--txt);border-radius:8px;cursor:pointer;padding:8px 12px;font-size:12px;transition:opacity .15s}
+button:active{opacity:.7}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+
+/* ── TOOLBAR ─────────────────────────────────────── */
+#toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:720px}
+.tool-btn{font-size:12px;padding:6px 13px;border-radius:20px;border:1px solid var(--bdr);background:var(--s1);color:var(--txt2);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit}
+.tool-btn.act,.tool-btn:hover{background:var(--acc);border-color:var(--acc);color:#fff}
+.srch-wrap{display:flex;align-items:center;gap:6px;background:var(--s1);border:1px solid var(--bdr);border-radius:20px;padding:5px 12px;flex:1;min-width:110px;max-width:190px}
+.srch-wrap:focus-within{border-color:var(--acc)}
+.srch-icon{font-size:14px;cursor:pointer;flex-shrink:0;line-height:1}
+#srch-in{flex:1;background:transparent;border:none;color:var(--txt);font-size:12px;outline:none;min-width:0;font-family:inherit}
+#srch-in::placeholder{color:var(--txt3)}
+
+/* Tool panel (slides open below toolbar) */
+#tool-panel{width:100%;max-width:720px;background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:14px 16px;overflow:hidden}
+.tp{display:none;flex-wrap:wrap;gap:14px}
+.tp.show{display:flex}
+.tp-col{display:flex;flex-direction:column;gap:5px;min-width:155px;flex:1}
+.tp-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:2px}
+.tp-lbl.urg{color:#e05050}
+.tp-link{font-size:12px;color:var(--txt2);text-decoration:none;padding:6px 9px;border-radius:7px;border:.5px solid var(--bdr);background:var(--s2);transition:all .15s;display:block;line-height:1.35}
+.tp-link:hover,.tp-link:active{background:var(--acc);border-color:var(--acc);color:#fff;text-decoration:none}
+.tp-link.urg{border-color:#5a1010;color:#f08080}
+.tp-link.urg:hover{background:#b01818;border-color:#b01818;color:#fff}
+.tp-vdiv{width:.5px;background:var(--bdr);align-self:stretch}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:4px 0}
+.em-btn{font-size:30px;background:transparent;border:.5px solid var(--bdr);border-radius:9px;cursor:pointer;padding:5px 9px;transition:all .15s;line-height:1;font-family:inherit}
+.em-btn:hover,.em-btn:active{background:var(--s2);border-color:var(--acc);transform:scale(1.18)}
+.tp-hint{font-size:10px;color:var(--txt3);margin-top:2px}
+#srch-out{font-size:12px;color:var(--txt2);min-height:18px}
+@media(max-width:540px){.tp-vdiv{width:100%;height:.5px;align-self:auto;margin:2px 0}}
+
+/* Download button */
+#dl-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 22px;border-radius:28px;cursor:pointer;font-family:inherit;
+  background:linear-gradient(135deg,#1a6e1a 0%,#28a828 100%);
+  border:2px solid #3ae03a;color:#fff;
+  font-size:15px;font-weight:700;letter-spacing:.5px;
+  box-shadow:0 4px 18px rgba(0,180,0,.35),0 1px 0 rgba(255,255,255,.15) inset;
+  transition:all .18s;white-space:nowrap;width:100%;
+}
+#dl-btn:hover,#dl-btn:active{
+  background:linear-gradient(135deg,#22901a 0%,#35d435 100%);
+  box-shadow:0 6px 24px rgba(0,220,0,.45);
+  transform:translateY(-1px);
+}
+#dl-btn:active{ transform:translateY(0); }
+.dl-icon{font-size:20px;line-height:1}
+.dl-label{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
+.dl-title{font-size:13px;font-weight:700}
+.dl-price{font-size:11px;opacity:.88;font-weight:400;letter-spacing:.3px}
+
+/* VR panel */
+.vr-row{display:flex;flex-direction:column;gap:7px}
+.vr-hint{font-size:10px;color:var(--txt3);line-height:1.6;margin-top:4px}
+#vr-support-txt{font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.55;min-height:16px}
+#tb-vr.vr-on{background:#1a3a5c!important;border-color:#3a8fd4!important;color:#7dd4ff!important}
+/* Hand cursors injected into body during XR hand-tracking */
+.xr-hand-cursor{position:fixed;width:22px;height:22px;border-radius:50%;border:2.5px solid;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .06s,background .1s}
+/* Lawrence pinch-activated badge shown in VR */
+#xr-badge{display:none;position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:rgba(10,5,30,.85);color:#c8b4f0;border:1px solid #8b4db8;border-radius:22px;padding:7px 18px;font-size:12px;font-family:'Bangers',cursive;letter-spacing:1.5px;z-index:9997;pointer-events:none;white-space:nowrap}
+
+/* AI / Play Computer panel */
+.diff-row{display:flex;gap:7px;flex-wrap:wrap;padding:4px 0}
+.diff-btn{font-size:12px;padding:7px 13px;border-radius:20px;border:1px solid var(--bdr);background:var(--s2);color:var(--txt2);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.diff-btn.act,.diff-btn:hover{background:var(--acc);border-color:var(--acc);color:#fff}
+#ai-status{font-size:11px;color:var(--txt3);margin-top:7px;line-height:1.55}
+#tb-ai.ai-on{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
+</style>
+</head>
+<body>
+
+<!-- Install banner (shown when browser fires beforeinstallprompt) -->
+<div id="ibanner">
+  <p>♟ Add BoomRock Chess to your home screen for offline play</p>
+  <button class="ib-btn" id="ibtn">Add to Home Screen ↗</button>
+  <button class="ib-x" onclick="document.getElementById('ibanner').style.display='none'">✕</button>
+</div>
+
+<div id="wr">
+  <div id="title">♟ BoomRock Chess ♪</div>
+
+  <!-- ── 4-BUTTON TOOLBAR ─────────────────────────── -->
+  <div id="toolbar">
+
+    <!-- 1. Mental Health -->
+    <button class="tool-btn" id="tb-mh" onclick="togglePanel('mh')">💚 Mental Health</button>
+
+    <!-- 2. Emoji -->
+    <button class="tool-btn" id="tb-em" onclick="togglePanel('em')">😊 Emoji</button>
+
+    <!-- 3. Puzzles -->
+    <button class="tool-btn" id="tb-pz" onclick="togglePanel('pz')">🧩 Puzzles</button>
+
+    <!-- 5. Play Computer -->
+    <button class="tool-btn" id="tb-ai" onclick="togglePanel('ai')">🤖 vs Computer</button>
+
+    <!-- 6. VR Mode -->
+    <button class="tool-btn" id="tb-vr" onclick="togglePanel('vr')">🥽 VR Mode</button>
+
+    <!-- 4. Search (magnifying glass visible, "Search" text hidden) -->
+    <div class="srch-wrap" onclick="openPanel('sr')">
+      <span class="srch-icon" aria-hidden="true">🔍</span>
+      <input id="srch-in" type="search" placeholder="Find players…"
+             onfocus="openPanel('sr')" oninput="onSearch(this.value)"
+             aria-label="Search players">
+    </div>
+  </div>
+
+  <!-- Tool panel area — shows content for whichever button is active -->
+  <div id="tool-panel" style="display:none">
+
+    <!-- Mental Health panel -->
+    <div id="panel-mh" class="tp">
+      <div class="tp-col">
+        <p class="tp-lbl urg">🚨 Emergency Support</p>
+        <a class="tp-link urg" href="tel:988">📞 Call 988 — Suicide &amp; Crisis Lifeline (US)</a>
+        <a class="tp-link urg" href="sms:741741?body=HOME">💬 Text HOME to 741741 — Crisis Text Line</a>
+        <a class="tp-link urg" href="https://www.befrienders.org" target="_blank" rel="noopener">🌍 Befrienders Worldwide — Global hotlines</a>
+        <a class="tp-link urg" href="https://www.iasp.info/resources/Crisis_Centres/" target="_blank" rel="noopener">🗺 IASP — International Crisis Centres</a>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">💼 Professional Services</p>
+        <a class="tp-link" href="https://www.betterhelp.com" target="_blank" rel="noopener">BetterHelp — Online therapy from $60/wk</a>
+        <a class="tp-link" href="https://www.talkspace.com" target="_blank" rel="noopener">Talkspace — Text, audio &amp; video sessions</a>
+        <a class="tp-link" href="https://www.psychologytoday.com/us/therapists" target="_blank" rel="noopener">Psychology Today — Find a local therapist</a>
+        <a class="tp-link" href="https://www.zocdoc.com/psychiatrists" target="_blank" rel="noopener">ZocDoc — Book a psychiatrist online</a>
+        <a class="tp-link" href="https://cerebralcare.com" target="_blank" rel="noopener">Cerebral — Medication &amp; therapy combined</a>
+      </div>
+    </div>
+
+    <!-- Emoji panel -->
+    <div id="panel-em" class="tp">
+      <div class="tp-col">
+        <p class="tp-lbl">Tap to add to chat</p>
+        <div class="emoji-row">
+          <button class="em-btn" onclick="sendEmoji('❤️')" title="Heart">❤️</button>
+          <button class="em-btn" onclick="sendEmoji('👍')" title="Thumbs up">👍</button>
+          <button class="em-btn" onclick="sendEmoji('😢')" title="Crying face">😢</button>
+          <button class="em-btn" onclick="sendEmoji('😈')" title="Devil face">😈</button>
+          <button class="em-btn" onclick="sendEmoji('😇')" title="Halo face">😇</button>
+        </div>
+        <p class="tp-hint">Emoji appears in the chat box — press Send to post it</p>
+      </div>
+    </div>
+
+    <!-- Puzzles panel -->
+    <div id="panel-pz" class="tp">
+      <div class="tp-col">
+        <p class="tp-lbl">🌱 Beginner</p>
+        <a class="tp-link" href="https://www.chesskid.com/puzzles" target="_blank" rel="noopener">ChessKid — Fun first puzzles</a>
+        <a class="tp-link" href="https://lichess.org/training" target="_blank" rel="noopener">Lichess — Free adaptive trainer</a>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">🌿 Intermediate</p>
+        <a class="tp-link" href="https://www.chess.com/puzzles/rated" target="_blank" rel="noopener">Chess.com — Rated puzzles</a>
+        <a class="tp-link" href="https://chesstempo.com" target="_blank" rel="noopener">ChessTempo — Spaced-repetition tactics</a>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">🌳 Advanced</p>
+        <a class="tp-link" href="https://www.chess.com/puzzles/rush" target="_blank" rel="noopener">Chess.com — Puzzle Rush (timed)</a>
+        <a class="tp-link" href="https://chesstempo.com/chess-problems.html" target="_blank" rel="noopener">ChessTempo — Problem set builder</a>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">🏔 Expert / Master</p>
+        <a class="tp-link" href="https://tactics.chessbase.com" target="_blank" rel="noopener">ChessBase — GM-level tactics</a>
+        <a class="tp-link" href="https://www.chessgames.com" target="_blank" rel="noopener">ChessGames.com — Grandmaster library</a>
+      </div>
+    </div>
+
+    <!-- Search / Instructors panel -->
+    <div id="panel-sr" class="tp">
+      <div class="tp-col" style="flex:2;min-width:200px">
+        <p class="tp-lbl">Player search</p>
+        <div id="srch-out">Type a name above to search for players.</div>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">🎓 Professional Chess Instructors</p>
+        <a class="tp-link" href="https://www.chess.com/coaches" target="_blank" rel="noopener">Chess.com — Certified coaches (all levels)</a>
+        <a class="tp-link" href="https://lichess.org/coach" target="_blank" rel="noopener">Lichess — Community instructors (free)</a>
+        <a class="tp-link" href="https://www.uschess.org" target="_blank" rel="noopener">US Chess — National coach registry</a>
+        <a class="tp-link" href="https://www.chessable.com" target="_blank" rel="noopener">Chessable — Video courses by top GMs</a>
+        <a class="tp-link" href="https://www.chessbase.com/training" target="_blank" rel="noopener">ChessBase — Train with Grandmasters</a>
+      </div>
+    </div>
+
+    <!-- VR Mode panel -->
+    <div id="panel-vr" class="tp">
+      <div class="tp-col" style="flex:2;min-width:220px">
+        <p class="tp-lbl">🥽 WebXR / VR Headset</p>
+        <div class="vr-row">
+          <button class="tp-link" id="vr-enter-btn" onclick="enterVR()" style="font-size:13px;text-align:center">🥽 Enter VR</button>
+        </div>
+        <div id="vr-support-txt">Checking VR support…</div>
+        <p class="vr-hint">
+          Works on: Meta Quest browser · Chrome on Android with Cardboard or Daydream ·
+          Any WebXR-capable headset.<br>
+          Game appears as a flat panel in VR. Use your <strong>controller trigger</strong>
+          to move pieces, or use <strong>hand tracking</strong> — pinch (index + thumb)
+          to click, and point at Lawrence on d4 to see his name.
+        </p>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">✋ Hand Gestures</p>
+        <a class="tp-link" style="cursor:default">👌 Pinch (index + thumb) — click</a>
+        <a class="tp-link" style="cursor:default">☝️ Point at Lawrence on d4 — tooltip</a>
+        <a class="tp-link" style="cursor:default">🤙 Pinch + hold 1s — confirm move</a>
+        <p class="vr-hint" style="margin-top:6px">Hand-tracking must be enabled in your headset's settings. On Meta Quest: Settings → Movement Tracking → Hand Tracking.</p>
+      </div>
+    </div>
+
+    <!-- Play Computer panel -->
+    <div id="panel-ai" class="tp">
+      <div class="tp-col" style="flex:2;min-width:240px">
+        <p class="tp-lbl">⚙️ Difficulty</p>
+        <div class="diff-row">
+          <button class="diff-btn" id="diff-easy"       onclick="setDiff('easy')">😌 Easy</button>
+          <button class="diff-btn act" id="diff-normal" onclick="setDiff('normal')">🙂 Normal</button>
+          <button class="diff-btn" id="diff-hard"       onclick="setDiff('hard')">😤 Hard</button>
+          <button class="diff-btn" id="diff-expert"     onclick="setDiff('expert')">🧠 Expert</button>
+          <button class="diff-btn" id="diff-impossible" onclick="setDiff('impossible')">👾 Impossible</button>
+        </div>
+        <div id="ai-status">Computer is <strong>OFF</strong> — pick a difficulty or click the button below to start.</div>
+      </div>
+      <div class="tp-vdiv"></div>
+      <div class="tp-col">
+        <p class="tp-lbl">Mode</p>
+        <button class="tp-link" id="ai-toggle-btn" onclick="toggleAI()">▶ Play as White vs Computer</button>
+        <button class="tp-link" style="margin-top:5px" onclick="newGame()">↺ New Game</button>
+        <p class="tp-hint" style="margin-top:8px">You play White. Computer plays Black.</p>
+      </div>
+    </div>
+
+  </div>
+  <!-- ── END TOOLBAR ─────────────────────────────── -->
+
+  <!-- Time control selector -->
+  <div id="tc">
+    <span class="lbl">Time:</span>
+    <button class="tcb" onclick="setTC(60,this)">1 min</button>
+    <button class="tcb" onclick="setTC(120,this)">2 min</button>
+    <button class="tcb" onclick="setTC(180,this)">3 min</button>
+    <button class="tcb" onclick="setTC(300,this)">5 min</button>
+    <button class="tcb act" onclick="setTC(600,this)">10 min</button>
+    <button class="tcb" onclick="setTC(900,this)">15 min</button>
+    <button class="tcb" onclick="setTC(1800,this)">30 min</button>
+  </div>
+
+  <!-- Game area -->
+  <div id="ga">
+    <!-- Board + clocks -->
+    <div id="bcol">
+      <div class="byline">Antonio Modest Tambornino &nbsp;·&nbsp; 6/12/2026</div>
+      <div id="bclk" class="clk">
+        <div class="clk-l">
+          <span class="clk-sym">♟</span>
+          <span class="clk-who">BLACK</span>
+          <span class="clk-cap" id="bcap"></span>
+        </div>
+        <div class="clk-r">
+          <span class="clk-adv" id="badv"></span>
+          <span class="clk-time" id="btime">10:00</span>
+        </div>
+      </div>
+
+      <div id="bwrap">
+        <div id="board"></div>
+        <div id="ltip">Lawrence Erasmus Peregrine &amp; the Linnean Society</div>
+        <div id="po">
+          <div id="pb">
+            <p>Promote pawn</p>
+            <div id="pch"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="byline">Antonio Modest Tambornino &nbsp;·&nbsp; 6/12/2026</div>
+      <div id="wclk" class="clk">
+        <div class="clk-l">
+          <span class="clk-sym">♙</span>
+          <span class="clk-who">WHITE</span>
+          <span class="clk-cap" id="wcap"></span>
+        </div>
+        <div class="clk-r">
+          <span class="clk-adv" id="wadv"></span>
+          <span class="clk-time" id="wtime">10:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div id="side">
+      <div class="panel" style="padding:8px 12px">
+        <p class="plbl" style="margin-bottom:3px">Status</p>
+        <div id="stxt">White to move</div>
+      </div>
+
+      <div id="tabs">
+        <button class="tb act" onclick="openTab('score',this)">Score</button>
+        <button class="tb" onclick="openTab('moves',this)">Moves</button>
+        <button class="tb" onclick="openTab('chat',this)">Chat</button>
+        <button class="tb" onclick="openTab('cam',this)">Cam</button>
+      </div>
+
+      <!-- Score tab -->
+      <div id="tab-score" class="tab-p show panel">
+        <p class="plbl">Material balance</p>
+        <div class="srow">
+          <span class="ssym">♔</span><span class="sname">White</span>
+          <span class="spieces" id="scwc"></span>
+          <span class="spts" id="scwp">0 pts</span>
+        </div>
+        <div class="advw"><div class="advb" id="advb" style="left:50%;width:0"></div></div>
+        <div class="srow">
+          <span class="ssym">♚</span><span class="sname">Black</span>
+          <span class="spieces" id="scbc"></span>
+          <span class="spts" id="scbp">0 pts</span>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:.5px solid var(--bdr)">
+          <p class="plbl">Piece notes</p>
+          <div class="nleg">
+            <span>♙ Pawn — C4 sine</span><span>♘ Knight — E4 sq.</span>
+            <span>♗ Bishop — G4 tri.</span><span>♖ Rook — A3 saw</span>
+            <span>♕ Queen — C5 sine</span><span>♔ King — F3 sine</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moves tab -->
+      <div id="tab-moves" class="tab-p panel">
+        <p class="plbl">Move log</p>
+        <div id="mlog"></div>
+      </div>
+
+      <!-- Chat tab -->
+      <div id="tab-chat" class="tab-p panel">
+        <p class="plbl">Chat</p>
+        <div id="cmsgs"></div>
+        <div id="cinr">
+          <input id="ci" placeholder="Message…" onkeydown="if(event.key==='Enter')sendChat()">
+          <button onclick="sendChat()">Send</button>
+        </div>
+      </div>
+
+      <!-- Camera tab -->
+      <div id="tab-cam" class="tab-p panel">
+        <p class="plbl">Camera &amp; Mic</p>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <video id="cvid" autoplay muted playsinline></video>
+          <button id="cbtn" onclick="toggleCam()">Start camera</button>
+          <p style="font-size:10px;color:var(--txt3);text-align:center;line-height:1.5">
+            Requires HTTPS &amp; browser permission.<br>
+            Works in Chrome, Safari, Firefox.
+          </p>
+        </div>
+      </div>
+
+      <button onclick="newGame()" style="margin-top:2px;font-size:13px">New game ♟</button>
+
+      <button id="dl-btn" onclick="downloadGame()" title="Download BoomRock Chess — $0.99">
+        <span class="dl-icon">⬇</span>
+        <span class="dl-label">
+          <span class="dl-title">Download</span>
+          <span class="dl-price">$0.99</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="xr-badge">✋ Pinch to interact · Point at Lawrence on d4</div>
+
+<script>
+'use strict';
+
+// ── PWA: Manifest + Service Worker ─────────────────────────────────────────
+(function initPWA(){
+  // SVG icon (chess knight on dark red background)
+  const iconSVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='90' fill='%231a0000'/><text y='430' x='56' font-size='400' font-family='serif'>♞</text></svg>`;
+  const iconURI = 'data:image/svg+xml,' + iconSVG;
+
+  // Apple touch icon
+  document.getElementById('ati').href = iconURI.replace(/%23/g,'#');
+
+  // Manifest as data URI
+  const manifest = {
+    name: 'BoomRock Chess',
+    short_name: 'BoomRock',
+    description: 'BoomRock Chess — every piece plays a musical note. Lawrence lives on d4.',
+    start_url: './',
+    scope: './',
+    display: 'standalone',
+    orientation: 'any',
+    background_color: '#080808',
+    theme_color: '#1a0000',
+    icons: [
+      { src: iconURI, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: iconURI, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' }
+    ]
+  };
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    document.getElementById('mfst').href = URL.createObjectURL(blob);
+  } catch(e) {}
+
+  // Inline service worker via Blob for offline caching
+  if ('serviceWorker' in navigator) {
+    const sw = `
+const CACHE = 'musical-chess-v1';
+const OFFLINE_ASSETS = [location.href];
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE_ASSETS).catch(()=>{})));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => cached || new Response('Offline', { status: 503 }));
+    })
+  );
+});`;
+    try {
+      const swBlob = new Blob([sw], { type: 'application/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(swBlob), { scope: './' }).catch(() => {});
+    } catch(e) {}
+  }
+
+  // Install prompt (Android/Chrome)
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferred = e;
+    document.getElementById('ibanner').style.display = 'flex';
+    document.getElementById('ibtn').onclick = async () => {
+      document.getElementById('ibanner').style.display = 'none';
+      if (deferred) { deferred.prompt(); deferred = null; }
+    };
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('ibanner').style.display = 'none';
+  });
+
+  // iOS Safari hint (no beforeinstallprompt on iOS)
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone;
+  if (isIOS && !isStandalone) {
+    const b = document.getElementById('ibanner');
+    b.style.display = 'flex';
+    document.querySelector('#ibanner p').textContent =
+      '♟ Tap the Share button then "Add to Home Screen" to install BoomRock Chess.';
+    document.getElementById('ibtn').style.display = 'none';
+  }
+})();
+
+// ── AUDIO ────────────────────────────────────────────────────────────────────
+let AC = null;
+const getAC = () => {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+};
+const HZ = {
+  A3:220, C4:261.63, D4:293.66, E4:329.63, G4:392,
+  A4:440, Bb4:466.16, B4:493.88, C5:523.25, E5:659.25, G5:783.99
+};
+function tone(hz, wave, dur, delay, vol) {
+  const c = getAC(), o = c.createOscillator(), g = c.createGain();
+  o.connect(g); g.connect(c.destination);
+  o.type = wave || 'sine'; o.frequency.value = hz;
+  const t = c.currentTime + (delay || 0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol || 0.25, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.001, t + (dur || 0.3));
+  o.start(t); o.stop(t + (dur || 0.3) + 0.06);
+}
+const PIECE_NOTE = {
+  p: [HZ.C4,  'sine',     0.25],
+  n: [HZ.E4,  'square',   0.30],
+  b: [HZ.G4,  'triangle', 0.30],
+  r: [HZ.A3,  'sawtooth', 0.40],
+  q: [HZ.C5,  'sine',     0.50],
+  k: [174.61, 'sine',     0.40]
+};
+const playPiece = t => { const [f,w,d] = PIECE_NOTE[t]||[]; if(f) tone(f,w,d); };
+const playSeq = ns => ns.forEach(([f,w,d,dl]) => tone(f,w,d,dl));
+const TUNES = {
+  capture:   [[HZ.G4,'sawtooth',.10,0],[HZ.D4,'sawtooth',.10,.11],[HZ.A3,'sawtooth',.22,.22]],
+  castle:    [[HZ.C4,'sine',.12,0],[HZ.E4,'sine',.12,.13],[HZ.G4,'sine',.12,.26],[HZ.C5,'sine',.30,.39]],
+  check:     [[HZ.G5,'square',.07,0],[HZ.G5,'square',.10,.16]],
+  checkmate: [[HZ.C5,'sine',.25,0],[HZ.B4,'sine',.25,.26],[HZ.Bb4,'sine',.25,.52],[HZ.A4,'sine',.60,.78]],
+  promo:     [[HZ.C4,'sine',.10,0],[HZ.E4,'sine',.10,.12],[HZ.G4,'sine',.10,.24],[HZ.C5,'sine',.10,.36],[HZ.E5,'sine',.40,.48]],
+  ep:        [[HZ.E4,'triangle',.10,0],[HZ.G4,'triangle',.10,.12],[HZ.B4,'triangle',.25,.24]],
+  stale:     [[HZ.C4,'sine',.35,0],[HZ.C4,'sine',.35,.40],[HZ.C4,'sine',.70,.80]],
+  start:     [[HZ.C4,'sine',.15,0],[HZ.E4,'sine',.15,.16],[HZ.G4,'sine',.15,.32],[HZ.C5,'sine',.30,.48]],
+  timeout:   [[HZ.G5,'square',.08,0],[HZ.E5,'square',.08,.10],[HZ.C5,'square',.08,.20],[HZ.A4,'square',.50,.32]]
+};
+
+// ── LAWRENCE SVG (Will Eisner style) ────────────────────────────────────────
+// Oxford Don, 19, violin player, ear-to-ear beard covering half his neck.
+const LAWRENCE = `<svg viewBox="0 0 52 52" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;z-index:1;pointer-events:none">
+  <rect x="16" y="44" width="20" height="10" rx="2" fill="#1a2040" stroke="#000" stroke-width="1.2"/>
+  <path d="M21 44 L26 50 L31 44" fill="#e0e0e8" stroke="#111" stroke-width=".7"/>
+  <ellipse cx="26" cy="22" rx="14" ry="15" fill="#FBDDB0" stroke="#000" stroke-width="1.6"/>
+  <path d="M12 19 Q12 6 26 5 Q40 6 40 19 Q37 11 26 11 Q15 11 12 19Z" fill="#100600" stroke="#000" stroke-width="1.2"/>
+  <path d="M12 21 Q9 23 9 27 Q9 31 12 31" fill="#FBDDB0" stroke="#000" stroke-width="1.2"/>
+  <path d="M40 21 Q43 23 43 27 Q43 31 40 31" fill="#FBDDB0" stroke="#000" stroke-width="1.2"/>
+  <path d="M12 25 Q10 34 13 42 Q19 52 26 52 Q33 52 39 42 Q42 34 40 25 Q34 23 26 23 Q18 23 12 25Z" fill="#100600" stroke="#000" stroke-width="1.6"/>
+  <circle cx="19" cy="21" r="5.5" fill="rgba(180,215,250,.15)" stroke="#111" stroke-width="1.2"/>
+  <circle cx="33" cy="21" r="5.5" fill="rgba(180,215,250,.15)" stroke="#111" stroke-width="1.2"/>
+  <line x1="24.5" y1="21" x2="27.5" y2="21" stroke="#111" stroke-width="1.2"/>
+  <line x1="12" y1="19" x2="14" y2="20" stroke="#111" stroke-width="1.2"/>
+  <line x1="40" y1="19" x2="38" y2="20" stroke="#111" stroke-width="1.2"/>
+  <ellipse cx="19" cy="21" rx="2.8" ry="2.6" fill="#060200"/>
+  <ellipse cx="33" cy="21" rx="2.8" ry="2.6" fill="#060200"/>
+  <circle cx="20" cy="19.8" r="1" fill="#fff"/>
+  <circle cx="34" cy="19.8" r="1" fill="#fff"/>
+  <path d="M13 13.5 Q19 10.5 24 13.5" fill="none" stroke="#100600" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M28 13.5 Q33 10.5 39 13.5" fill="none" stroke="#100600" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M24 26 Q26 29 28 26" fill="none" stroke="#B07028" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="45" y1="30" x2="47" y2="17" stroke="#7B3A0A" stroke-width="1.8" stroke-linecap="round"/>
+  <ellipse cx="45.5" cy="32" rx="2.5" ry="3.2" fill="#8B4513" stroke="#000" stroke-width=".8"/>
+  <text x="26" y="52" text-anchor="middle" font-size="4" fill="#cc4444" font-family="serif" font-style="italic">Lawrence</text>
+</svg>`;
+
+// ── CHESS STATE ───────────────────────────────────────────────────────────────
+let board, turn, sel, vms, lastM, ept, cr, inChk, over, pend, mnum, wCapt, bCapt;
+const PV = { p:1, n:3, b:3, r:5, q:9, k:0 };
+const SY = {
+  wk:'♔',wq:'♕',wr:'♖',wb:'♗',wn:'♘',wp:'♙',
+  bk:'♚',bq:'♛',br:'♜',bb:'♝',bn:'♞',bp:'♟'
+};
+const FL = 'abcdefgh', RK = '87654321';
+
+// ── CLOCK STATE ──────────────────────────────────────────────────────────────
+let timeControl = 600, wTime, bTime, clkInt = null, clkOn = false;
+
+function fmt(s) {
+  const m = Math.floor(s / 60), sc = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
+}
+
+function setTC(sec, btn) {
+  timeControl = sec;
+  document.querySelectorAll('.tcb').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
+  if (!clkOn) newGame();
+}
+
+function initClk() {
+  clearInterval(clkInt); clkInt = null;
+  wTime = bTime = timeControl; clkOn = false;
+  renderClks();
+}
+
+function startClk() {
+  clkOn = true;
+  clearInterval(clkInt);
+  clkInt = setInterval(() => {
+    if (over) { clearInterval(clkInt); return; }
+    if (turn === 'w') { wTime = Math.max(0, wTime - 1); if (wTime === 0) onTimeout('w'); }
+    else               { bTime = Math.max(0, bTime - 1); if (bTime === 0) onTimeout('b'); }
+    renderClks();
+  }, 1000);
+}
+
+function onTimeout(cl) {
+  clearInterval(clkInt); over = true;
+  playSeq(TUNES.timeout);
+  setSt(`⏰ Time! ${cl === 'w' ? 'Black' : 'White'} wins on time!`);
+  render();
+}
+
+function renderClks() {
+  document.getElementById('btime').textContent = fmt(bTime);
+  document.getElementById('wtime').textContent = fmt(wTime);
+  const bc = document.getElementById('bclk'), wc = document.getElementById('wclk');
+  bc.className = 'clk' + (turn==='b'&&clkOn?' active':'') + (bTime<30&&clkOn&&turn==='b'?' low':'');
+  wc.className = 'clk' + (turn==='w'&&clkOn?' active':'') + (wTime<30&&clkOn&&turn==='w'?' low':'');
+}
+
+// ── CHESS ENGINE ──────────────────────────────────────────────────────────────
+function initBoard() {
+  const back = ['r','n','b','q','k','b','n','r'];
+  board = Array.from({length:8}, () => Array(8).fill(null));
+  for (let c = 0; c < 8; c++) {
+    board[0][c] = { t: back[c], cl: 'b' };
+    board[1][c] = { t: 'p',     cl: 'b' };
+    board[6][c] = { t: 'p',     cl: 'w' };
+    board[7][c] = { t: back[c], cl: 'w' };
+  }
+  turn = 'w'; sel = null; vms = []; lastM = null; ept = null;
+  cr = { w:{k:true,q:true}, b:{k:true,q:true} };
+  inChk = false; over = false; pend = null; mnum = 1;
+  wCapt = []; bCapt = [];
+}
+
+const gp = (r, c, b) => r>=0&&r<=7&&c>=0&&c<=7 ? b[r][c] : undefined;
+
+function pseudoMoves(r, c, b, ep, cR) {
+  const p = b[r][c]; if (!p) return [];
+  const { t, cl } = p, dir = cl==='w' ? -1 : 1, ms = [];
+
+  const slide = (dr, dc) => {
+    for (let i = 1; i < 8; i++) {
+      const tr = r+dr*i, tc = c+dc*i;
+      if (tr<0||tr>7||tc<0||tc>7) break;
+      const tg = b[tr][tc];
+      if (tg && tg.cl === cl) break;
+      ms.push({ from:{r,c}, to:{r:tr,c:tc} });
+      if (tg) break;
+    }
+  };
+  const jump = (dr, dc) => {
+    const tr = r+dr, tc = c+dc;
+    if (tr<0||tr>7||tc<0||tc>7) return;
+    const tg = b[tr][tc];
+    if (!tg || tg.cl !== cl) ms.push({ from:{r,c}, to:{r:tr,c:tc} });
+  };
+
+  if (t === 'p') {
+    if (!gp(r+dir, c, b)) {
+      ms.push({ from:{r,c}, to:{r:r+dir,c} });
+      if ((cl==='w'?r===6:r===1) && !gp(r+2*dir, c, b))
+        ms.push({ from:{r,c}, to:{r:r+2*dir,c}, dbl:true });
+    }
+    for (const dc of [-1, 1]) {
+      const tr = r+dir, tc = c+dc;
+      if (tr<0||tr>7||tc<0||tc>7) continue;
+      const tg = gp(tr, tc, b);
+      if (tg && tg.cl !== cl) ms.push({ from:{r,c}, to:{r:tr,c:tc} });
+      if (ep && tr===ep.r && tc===ep.c) ms.push({ from:{r,c}, to:{r:tr,c:tc}, ep:true });
+    }
+  } else if (t === 'n') {
+    for (const [a,b2] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) jump(a,b2);
+  } else if (t === 'b') {
+    for (const [a,b2] of [[-1,-1],[-1,1],[1,-1],[1,1]]) slide(a,b2);
+  } else if (t === 'r') {
+    for (const [a,b2] of [[-1,0],[1,0],[0,-1],[0,1]]) slide(a,b2);
+  } else if (t === 'q') {
+    for (const [a,b2] of [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]) slide(a,b2);
+  } else if (t === 'k') {
+    for (const [a,b2] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) jump(a,b2);
+    if (cR) {
+      const rw = cl==='w' ? 7 : 0, rts = cR[cl];
+      if (rts.k) { const rk=gp(rw,7,b); if(rk&&rk.t==='r'&&rk.cl===cl&&!gp(rw,5,b)&&!gp(rw,6,b)) ms.push({from:{r,c},to:{r:rw,c:6},castle:'k'}); }
+      if (rts.q) { const rk=gp(rw,0,b); if(rk&&rk.t==='r'&&rk.cl===cl&&!gp(rw,3,b)&&!gp(rw,2,b)&&!gp(rw,1,b)) ms.push({from:{r,c},to:{r:rw,c:2},castle:'q'}); }
+    }
+  }
+  return ms;
+}
+
+function kingInCheck(cl, b, ep) {
+  let kr = -1, kc = -1;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
+    if (b[r][c]?.t==='k' && b[r][c]?.cl===cl) { kr=r; kc=c; }
+  if (kr < 0) return false;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = b[r][c];
+    if (p && p.cl !== cl && pseudoMoves(r,c,b,ep,null).some(m=>m.to.r===kr&&m.to.c===kc)) return true;
+  }
+  return false;
+}
+
+function applyMove(b, mv, pr) {
+  const nb = b.map(row => row.map(cell => cell ? {...cell} : null));
+  const { from, to } = mv, p = nb[from.r][from.c];
+  nb[to.r][to.c] = {...p}; nb[from.r][from.c] = null;
+  if (mv.ep) { const d = p.cl==='w'?1:-1; nb[to.r+d][to.c] = null; }
+  if (mv.castle) {
+    const rw = p.cl==='w'?7:0;
+    if (mv.castle==='k') { nb[rw][5]={...nb[rw][7]}; nb[rw][7]=null; }
+    else                  { nb[rw][3]={...nb[rw][0]}; nb[rw][0]=null; }
+  }
+  if (p.t==='p' && (to.r===0||to.r===7)) nb[to.r][to.c].t = pr||'q';
+  return nb;
+}
+
+function legalMoves(r, c) {
+  const p = board[r][c]; if (!p || p.cl !== turn) return [];
+  return pseudoMoves(r,c,board,ept,cr).filter(mv => {
+    if (mv.castle) {
+      if (kingInCheck(p.cl, board, ept)) return false;
+      const rw = p.cl==='w'?7:0;
+      const thru = applyMove(board, { from:{r,c}, to:{r:rw,c:mv.castle==='k'?5:3} });
+      if (kingInCheck(p.cl, thru, null)) return false;
+    }
+    return !kingInCheck(p.cl, applyMove(board, mv), null);
+  });
+}
+
+function allLegalMoves() {
+  const a = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
+    if (board[r][c]?.cl === turn) a.push(...legalMoves(r,c));
+  return a;
+}
+
+// ── SCORE ────────────────────────────────────────────────────────────────────
+function updateScore() {
+  const wPts = wCapt.reduce((s,t) => s+PV[t], 0);
+  const bPts = bCapt.reduce((s,t) => s+PV[t], 0);
+  const adv   = wPts - bPts;
+
+  const grp = (arr, forW) => {
+    const cnt = {};
+    arr.forEach(t => cnt[t] = (cnt[t]||0) + 1);
+    return ['q','r','b','n','p'].filter(t=>cnt[t])
+      .map(t => (forW ? SY['b'+t] : SY['w'+t]).repeat(cnt[t])).join('');
+  };
+
+  document.getElementById('scwc').textContent = grp(wCapt, true);
+  document.getElementById('scbc').textContent = grp(bCapt, false);
+  document.getElementById('scwp').textContent = wPts + ' pts';
+  document.getElementById('scbp').textContent = bPts + ' pts';
+
+  const bar = document.getElementById('advb'), tot = wPts + bPts || 1;
+  if (adv > 0) {
+    const w = Math.min(50, adv/tot*100);
+    bar.style.left='50%'; bar.style.width=w+'%'; bar.style.background='#3ef03e';
+  } else if (adv < 0) {
+    const w = Math.min(50, -adv/tot*100);
+    bar.style.left=(50-w)+'%'; bar.style.width=w+'%'; bar.style.background='#f03e3e';
+  } else {
+    bar.style.width='0'; bar.style.left='50%';
+  }
+
+  document.getElementById('wadv').textContent = adv > 0 ? '+'+adv : '';
+  document.getElementById('badv').textContent = adv < 0 ? '+'+(-adv) : '';
+  document.getElementById('wcap').textContent = grp(wCapt, true);
+  document.getElementById('bcap').textContent = grp(bCapt, false);
+}
+
+// ── EXECUTE MOVE ─────────────────────────────────────────────────────────────
+function doMove(mv, pr) {
+  if (!clkOn) startClk();
+
+  const p   = board[mv.from.r][mv.from.c];
+  const cap = board[mv.to.r][mv.to.c];
+  const isCap    = !!cap || mv.ep;
+  const isCastle = !!mv.castle;
+  const isEP     = !!mv.ep;
+
+  // Track captures
+  if (cap) { if (p.cl==='w') wCapt.push(cap.t); else bCapt.push(cap.t); }
+  if (mv.ep) { if (p.cl==='w') wCapt.push('p'); else bCapt.push('p'); }
+
+  // Update castling rights
+  if (p.t==='k') { cr[p.cl].k=false; cr[p.cl].q=false; }
+  if (p.t==='r') {
+    const hw = p.cl==='w'?7:0;
+    if (mv.from.r===hw&&mv.from.c===7) cr[p.cl].k=false;
+    if (mv.from.r===hw&&mv.from.c===0) cr[p.cl].q=false;
+  }
+  if (cap?.t==='r') {
+    const hw = cap.cl==='w'?7:0;
+    if (mv.to.r===hw&&mv.to.c===7) cr[cap.cl].k=false;
+    if (mv.to.r===hw&&mv.to.c===0) cr[cap.cl].q=false;
+  }
+
+  // En passant target
+  ept = mv.dbl ? { r: mv.from.r + (p.cl==='w'?-1:1), c: mv.to.c } : null;
+
+  board = applyMove(board, mv, pr || 'q');
+  lastM = { from: mv.from, to: mv.to };
+
+  const isPr = p.t==='p' && (mv.to.r===0||mv.to.r===7);
+
+  // Notation
+  let note = '';
+  if (isCastle) {
+    note = mv.castle==='k' ? 'O-O' : 'O-O-O';
+  } else {
+    const pc = p.t==='p' ? '' : p.t.toUpperCase();
+    note = pc + (isCap?(p.t==='p'?FL[mv.from.c]:'')+'x':'') + FL[mv.to.c] + RK[mv.to.r];
+    if (isPr) note += '=' + (pr||'q').toUpperCase();
+    if (isEP) note += ' e.p.';
+  }
+
+  const prev = turn;
+  turn = turn==='w' ? 'b' : 'w';
+  inChk = kingInCheck(turn, board, ept);
+  const rem = allLegalMoves();
+
+  if (!rem.length) {
+    clearInterval(clkInt);
+    if (inChk) {
+      note += '#'; logMove(note, prev);
+      playSeq(TUNES.checkmate);
+      setSt(`Checkmate! ${prev==='w'?'White':'Black'} wins! ♛`);
+    } else {
+      note += ' ½'; logMove(note, prev);
+      playSeq(TUNES.stale);
+      setSt('Stalemate — draw! ½');
+    }
+    over = true;
+  } else {
+    if (inChk) note += '+';
+    logMove(note, prev);
+    if (isCastle)     playSeq(TUNES.castle);
+    else if (isEP)    playSeq(TUNES.ep);
+    else if (isCap)   playSeq(TUNES.capture);
+    else if (isPr)    playSeq(TUNES.promo);
+    else              playPiece(p.t);
+    if (inChk) setTimeout(() => playSeq(TUNES.check), 430);
+    setSt(inChk
+      ? `Check! ${turn==='w'?'White':'Black'} to move`
+      : `${turn==='w'?'White':'Black'} to move`
+    );
+  }
+
+  if (prev === 'b') mnum++;
+  updateScore(); renderClks(); render();
+  // If AI mode is on and it's now Black's turn, schedule the computer move
+  if (aiMode && !over && turn === 'b') setTimeout(triggerAI, 0);
+}
+
+function logMove(note, cl) {
+  const log = document.getElementById('mlog');
+  if (cl === 'w') {
+    const d = document.createElement('div');
+    d.id = 'ml' + mnum;
+    d.innerHTML = `<span class="mn">${mnum}.</span> ${note} `;
+    log.appendChild(d);
+  } else {
+    const d = document.getElementById('ml' + mnum);
+    if (d) d.innerHTML += note;
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function setSt(t) { document.getElementById('stxt').textContent = t; }
+
+// ── RENDER BOARD ─────────────────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+
+  let ckp = null;
+  if (inChk) for (let r=0;r<8;r++) for (let c=0;c<8;c++)
+    if (board[r][c]?.t==='k' && board[r][c]?.cl===turn) ckp={r,c};
+
+  const vmS = new Set(vms.map(m => `${m.to.r},${m.to.c}`));
+  const vcS = new Set(vms.filter(m => {
+    const tg = board[m.to.r][m.to.c];
+    return (tg && tg.cl !== turn) || m.ep;
+  }).map(m => `${m.to.r},${m.to.c}`));
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const sq = document.createElement('div');
+      sq.className = 'sq ' + ((r+c)%2===0 ? 'light' : 'dark');
+      const k = `${r},${c}`;
+
+      if (sel && sel.r===r && sel.c===c) sq.classList.add('sel');
+      else if (lastM) {
+        if (lastM.from.r===r&&lastM.from.c===c) sq.classList.add('lastf');
+        else if (lastM.to.r===r&&lastM.to.c===c) sq.classList.add('lastt');
+      }
+      if (vcS.has(k)) sq.classList.add('vc');
+      else if (vmS.has(k)) sq.classList.add('vm');
+      if (ckp && ckp.r===r && ckp.c===c) sq.classList.add('chk');
+
+      // Lawrence on d4 (row 4, col 3) when empty
+      if (r===4 && c===3 && !board[4][3]) {
+        sq.innerHTML = LAWRENCE;
+        sq.addEventListener('pointerenter', showLawrenceTip);
+        sq.addEventListener('pointerleave', hideLawrenceTip);
+      }
+
+      // Coordinate labels
+      if (c===0) { const lb=document.createElement('span');lb.className='coord r';lb.textContent=RK[r];sq.appendChild(lb); }
+      if (r===7) { const lb=document.createElement('span');lb.className='coord f';lb.textContent=FL[c];sq.appendChild(lb); }
+
+      // Piece
+      const p = board[r][c];
+      if (p) {
+        const pe = document.createElement('span');
+        pe.className = 'piece ' + (p.cl === 'b' ? 'piece-b' : 'piece-w');
+        pe.textContent = SY[p.cl+p.t];
+        sq.appendChild(pe);
+      }
+
+      sq.addEventListener('pointerdown', () => handleClick(r, c));
+      el.appendChild(sq);
+    }
+  }
+}
+
+// ── CLICK HANDLER ────────────────────────────────────────────────────────────
+function handleClick(r, c) {
+  if (over || pend) return;
+  if (aiMode && turn === 'b') return; // block while computer is moving
+  const p = board[r][c];
+
+  if (sel) {
+    const mv = vms.find(m => m.to.r===r && m.to.c===c);
+    if (mv) {
+      const mp = board[sel.r][sel.c];
+      if (mp.t==='p' && (r===0||r===7)) { pend=mv; showPromo(mp.cl); return; }
+      floatNote(mp.t, sel.r, sel.c);
+      sel=null; vms=[];
+      doMove(mv);
+      return;
+    }
+    if (p && p.cl===turn) { sel={r,c}; vms=legalMoves(r,c); render(); return; }
+    sel=null; vms=[]; render();
+    return;
+  }
+
+  if (p && p.cl===turn) { sel={r,c}; vms=legalMoves(r,c); render(); }
+}
+
+function showPromo(cl) {
+  const po = document.getElementById('po'), pc = document.getElementById('pch');
+  pc.innerHTML = '';
+  const ws={q:'♕',r:'♖',b:'♗',n:'♘'}, bs={q:'♛',r:'♜',b:'♝',n:'♞'};
+  const sy = cl==='w' ? ws : bs;
+  ['q','r','b','n'].forEach(tp => {
+    const d = document.createElement('div');
+    d.className = 'ppc piece ' + (cl === 'b' ? 'piece-b' : 'piece-w'); d.textContent = sy[tp];
+    d.onclick = () => {
+      po.style.display='none';
+      const m=pend; pend=null; sel=null; vms=[];
+      doMove(m, tp);
+    };
+    pc.appendChild(d);
+  });
+  po.style.display = 'flex';
+}
+
+function floatNote(tp, r, c) {
+  const ns = { p:'♩', n:'♪', b:'♫', r:'♬', q:'♯', k:'♭' };
+  const sq = document.querySelector(`#board .sq:nth-child(${r*8+c+1})`);
+  if (!sq) return;
+  const el = document.createElement('div');
+  el.className = 'fn'; el.textContent = ns[tp]||'♪';
+  const sqR = sq.getBoundingClientRect(), bwR = document.getElementById('bwrap').getBoundingClientRect();
+  el.style.left = (sqR.left - bwR.left + 8) + 'px';
+  el.style.top  = (sqR.top  - bwR.top  + 4) + 'px';
+  document.getElementById('bwrap').appendChild(el);
+  setTimeout(() => el.remove(), 960);
+}
+
+// ── CHAT ─────────────────────────────────────────────────────────────────────
+function sendChat() {
+  const inp = document.getElementById('ci'), txt = inp.value.trim();
+  if (!txt) return; inp.value = '';
+  const ms = document.getElementById('cmsgs');
+  const who = turn==='w' ? 'White' : 'Black';
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `<div class="cmeta">${who} · ${time}</div><div class="cmsg ${turn}">${txt.replace(/</g,'&lt;')}</div>`;
+  ms.appendChild(wrap); ms.scrollTop = ms.scrollHeight;
+}
+
+// ── CAMERA ───────────────────────────────────────────────────────────────────
+async function toggleCam() {
+  const v = document.getElementById('cvid'), btn = document.getElementById('cbtn');
+  if (v.srcObject) {
+    v.srcObject.getTracks().forEach(t => t.stop());
+    v.srcObject = null; btn.textContent = 'Start camera';
+  } else {
+    try {
+      v.srcObject = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      btn.textContent = 'Stop camera';
+    } catch(e) {
+      btn.textContent = 'Access denied (' + e.name + ')';
+    }
+  }
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function openTab(id, btn) {
+  document.querySelectorAll('.tab-p').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.tb').forEach(b => b.classList.remove('act'));
+  document.getElementById('tab-' + id).classList.add('show');
+  btn.classList.add('act');
+}
+
+// ── TOOLBAR ──────────────────────────────────────────────────────────────────
+let activePanel = null;
+
+function togglePanel(id) {
+  const panel = document.getElementById('tool-panel');
+  const tp    = document.getElementById('panel-' + id);
+  const btn   = document.getElementById('tb-' + id);
+  const isOpen = activePanel === id;
+
+  // Reset all
+  document.querySelectorAll('.tp').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('act'));
+
+  if (isOpen) {
+    // Close
+    panel.style.display = 'none';
+    activePanel = null;
+  } else {
+    // Open
+    tp.classList.add('show');
+    panel.style.display = 'block';
+    if (btn) btn.classList.add('act');
+    activePanel = id;
+  }
+}
+
+function openPanel(id) {
+  if (activePanel !== id) togglePanel(id);
+}
+
+function sendEmoji(em) {
+  // Put emoji in the chat input and switch to the Chat tab
+  const inp = document.getElementById('ci');
+  inp.value = (inp.value ? inp.value + ' ' : '') + em;
+  inp.focus();
+  // Activate chat tab
+  document.querySelectorAll('.tab-p').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('#tabs .tb').forEach(b => b.classList.remove('act'));
+  document.getElementById('tab-chat').classList.add('show');
+  document.querySelectorAll('#tabs .tb')[2].classList.add('act');
+}
+
+function onSearch(val) {
+  const out = document.getElementById('srch-out');
+  openPanel('sr');
+  if (!val.trim()) {
+    out.textContent = 'Type a name above to search for players.';
+    return;
+  }
+  // No live backend — inform the user clearly
+  out.innerHTML =
+    `<span style="color:var(--txt3);font-size:11px">` +
+    `Searching for "<strong style="color:var(--txt)">${val.replace(/</g,'&lt;')}</strong>" — ` +
+    `live player search requires a server connection. ` +
+    `To find players or a coach, use the instructor links on the right.` +
+    `</span>`;
+}
+
+// ── AI ENGINE ────────────────────────────────────────────────────────────────
+let aiMode = false;
+let aiDifficulty = 'normal';
+const AI_DEPTH = { easy: 1, normal: 2, hard: 3, expert: 4, impossible: 5 };
+
+// Piece values (centipawns)
+const PVAL = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+
+// Piece-square tables (from White's POV, row 0 = rank 8)
+const PST = {
+  p: [
+    [ 0,  0,  0,  0,  0,  0,  0,  0],
+    [50, 50, 50, 50, 50, 50, 50, 50],
+    [10, 10, 20, 30, 30, 20, 10, 10],
+    [ 5,  5, 10, 25, 25, 10,  5,  5],
+    [ 0,  0,  0, 20, 20,  0,  0,  0],
+    [ 5, -5,-10,  0,  0,-10, -5,  5],
+    [ 5, 10, 10,-20,-20, 10, 10,  5],
+    [ 0,  0,  0,  0,  0,  0,  0,  0]
+  ],
+  n: [
+    [-50,-40,-30,-30,-30,-30,-40,-50],
+    [-40,-20,  0,  0,  0,  0,-20,-40],
+    [-30,  0, 10, 15, 15, 10,  0,-30],
+    [-30,  5, 15, 20, 20, 15,  5,-30],
+    [-30,  0, 15, 20, 20, 15,  0,-30],
+    [-30,  5, 10, 15, 15, 10,  5,-30],
+    [-40,-20,  0,  5,  5,  0,-20,-40],
+    [-50,-40,-30,-30,-30,-30,-40,-50]
+  ],
+  b: [
+    [-20,-10,-10,-10,-10,-10,-10,-20],
+    [-10,  0,  0,  0,  0,  0,  0,-10],
+    [-10,  0,  5, 10, 10,  5,  0,-10],
+    [-10,  5,  5, 10, 10,  5,  5,-10],
+    [-10,  0, 10, 10, 10, 10,  0,-10],
+    [-10, 10, 10, 10, 10, 10, 10,-10],
+    [-10,  5,  0,  0,  0,  0,  5,-10],
+    [-20,-10,-10,-10,-10,-10,-10,-20]
+  ],
+  r: [
+    [ 0,  0,  0,  0,  0,  0,  0,  0],
+    [ 5, 10, 10, 10, 10, 10, 10,  5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [ 0,  0,  0,  5,  5,  0,  0,  0]
+  ],
+  q: [
+    [-20,-10,-10, -5, -5,-10,-10,-20],
+    [-10,  0,  0,  0,  0,  0,  0,-10],
+    [-10,  0,  5,  5,  5,  5,  0,-10],
+    [ -5,  0,  5,  5,  5,  5,  0, -5],
+    [  0,  0,  5,  5,  5,  5,  0, -5],
+    [-10,  5,  5,  5,  5,  5,  0,-10],
+    [-10,  0,  5,  0,  0,  0,  0,-10],
+    [-20,-10,-10, -5, -5,-10,-10,-20]
+  ],
+  k: [
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-20,-30,-30,-40,-40,-30,-30,-20],
+    [-10,-20,-20,-20,-20,-20,-20,-10],
+    [ 20, 20,  0,  0,  0,  0, 20, 20],
+    [ 20, 30, 10,  0,  0, 10, 30, 20]
+  ]
+};
+
+function evalBoard(b) {
+  let score = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = b[r][c];
+      if (!p) continue;
+      const pr = p.cl === 'w' ? r : 7 - r;
+      const pst = PST[p.t] ? PST[p.t][pr][c] : 0;
+      score += (p.cl === 'w' ? 1 : -1) * (PVAL[p.t] + pst);
+    }
+  }
+  return score;
+}
+
+function movesForColor(b, cl, ep, cR) {
+  const out = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    if (b[r][c]?.cl !== cl) continue;
+    for (const mv of pseudoMoves(r, c, b, ep, cR)) {
+      if (!kingInCheck(cl, applyMove(b, mv), null)) out.push(mv);
+    }
+  }
+  return out;
+}
+
+function cloneCR(cR, b, mv) {
+  const n = { w:{k:cR.w.k,q:cR.w.q}, b:{k:cR.b.k,q:cR.b.q} };
+  const p = b[mv.from.r][mv.from.c]; if (!p) return n;
+  if (p.t==='k') { n[p.cl].k=false; n[p.cl].q=false; }
+  if (p.t==='r') {
+    const hw = p.cl==='w'?7:0;
+    if (mv.from.r===hw&&mv.from.c===7) n[p.cl].k=false;
+    if (mv.from.r===hw&&mv.from.c===0) n[p.cl].q=false;
+  }
+  return n;
+}
+
+function nextEP(b, mv) {
+  const p = b[mv.from.r][mv.from.c];
+  return mv.dbl ? { r: mv.from.r + (p.cl==='w'?-1:1), c: mv.to.c } : null;
+}
+
+// Order moves: captures first (MVV-LVA), then by PST gain
+function orderMoves(b, moves) {
+  return moves.slice().sort((a, b2) => {
+    const capA = b[a.to.r][a.to.c];
+    const capB = b[b2.to.r][b2.to.c];
+    const scA = capA ? PVAL[capA.t] - (PVAL[b[a.from.r][a.from.c].t] / 10) : 0;
+    const scB = capB ? PVAL[capB.t] - (PVAL[b[b2.from.r][b2.from.c].t] / 10) : 0;
+    return scB - scA;
+  });
+}
+
+function minimax(b, depth, alpha, beta, isMax, ep, cR) {
+  const cl = isMax ? 'w' : 'b';
+  const moves = movesForColor(b, cl, ep, cR);
+  if (!moves.length) {
+    return kingInCheck(cl, b, ep) ? (isMax ? -50000 : 50000) : 0;
+  }
+  if (depth === 0) return evalBoard(b);
+
+  const ordered = orderMoves(b, moves);
+  if (isMax) {
+    let best = -Infinity;
+    for (const mv of ordered) {
+      const nb = applyMove(b, mv);
+      const v = minimax(nb, depth-1, alpha, beta, false, nextEP(b,mv), cloneCR(cR,b,mv));
+      if (v > best) best = v;
+      alpha = Math.max(alpha, v);
+      if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const mv of ordered) {
+      const nb = applyMove(b, mv);
+      const v = minimax(nb, depth-1, alpha, beta, true, nextEP(b,mv), cloneCR(cR,b,mv));
+      if (v < best) best = v;
+      beta = Math.min(beta, v);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function bestAIMove() {
+  const moves = movesForColor(board, 'b', ept, cr);
+  if (!moves.length) return null;
+
+  if (aiDifficulty === 'easy') {
+    if (Math.random() < 0.5) return moves[Math.floor(Math.random() * moves.length)];
+    const scored = moves.map(mv => ({
+      mv, score: evalBoard(applyMove(board, mv)) + (Math.random() * 150 - 75)
+    }));
+    scored.sort((a, b) => a.score - b.score);
+    return scored[0].mv;
+  }
+
+  const depth = AI_DEPTH[aiDifficulty] || 2;
+  const ordered = orderMoves(board, moves);
+  let bestScore = Infinity, bestMoves = [];
+
+  for (const mv of ordered) {
+    const nb = applyMove(board, mv);
+    const score = minimax(nb, depth-1, -Infinity, Infinity, true, nextEP(board,mv), cloneCR(cr,board,mv));
+    if (score < bestScore - 1) { bestScore = score; bestMoves = [mv]; }
+    else if (score <= bestScore + 1) bestMoves.push(mv);
+  }
+
+  const pool = aiDifficulty === 'normal' ? Math.min(3, bestMoves.length) : 1;
+  return bestMoves[Math.floor(Math.random() * pool)];
+}
+
+function triggerAI() {
+  if (!aiMode || turn !== 'b' || over || pend) return;
+  const thinkMs = { easy: 200, normal: 300, hard: 400, expert: 600, impossible: 800 };
+  setSt('\u{1F916} Computer is thinking…');
+  setTimeout(() => {
+    if (!aiMode || turn !== 'b' || over) return;
+    const mv = bestAIMove();
+    if (!mv) return;
+    const mp = board[mv.from.r][mv.from.c];
+    floatNote(mp.t, mv.from.r, mv.from.c);
+    sel = null; vms = [];
+    doMove(mv, (mp.t==='p'&&(mv.to.r===0||mv.to.r===7)) ? 'q' : undefined);
+  }, thinkMs[aiDifficulty] || 300);
+}
+
+function setDiff(d) {
+  aiDifficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('act'));
+  const btn = document.getElementById('diff-' + d);
+  if (btn) btn.classList.add('act');
+  if (!aiMode) { aiMode = true; }
+  updateAIStatus();
+}
+
+function toggleAI() {
+  aiMode = !aiMode;
+  updateAIStatus();
+  if (aiMode && turn === 'b' && !over) triggerAI();
+}
+
+function updateAIStatus() {
+  const btn = document.getElementById('ai-toggle-btn');
+  const st  = document.getElementById('ai-status');
+  const tb  = document.getElementById('tb-ai');
+  const label = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
+  if (aiMode) {
+    if (btn) btn.textContent = '⏸ Stop playing vs Computer';
+    if (st)  st.innerHTML = '\u{1F916} Computer is <strong style="color:var(--grn)">ON</strong> playing Black at <strong>' + label + '</strong>.';
+    if (tb)  tb.classList.add('ai-on');
+  } else {
+    if (btn) btn.textContent = '▶ Play as White vs Computer';
+    if (st)  st.textContent = 'Computer is OFF — pick a difficulty or click above.';
+    if (tb)  tb.classList.remove('ai-on');
+  }
+}
+
+// ── WEBXR / VR ────────────────────────────────────────────────────────────────────────────
+let xrSession   = null;
+let xrRefSpace  = null;
+let xrGLCanvas  = null;
+let xrGL        = null;
+let xrLayer     = null;
+let xrHandCursors = {};
+let xrLawrenceOn  = false;
+let xrPinching    = { left: false, right: false };
+
+(async function initVRCheck() {
+  await new Promise(r => window.addEventListener('load', r, { once: true }));
+  const txt = document.getElementById('vr-support-txt');
+  const btn = document.getElementById('vr-enter-btn');
+  if (!txt) return;
+  if (!navigator.xr) {
+    txt.textContent = '⚠ WebXR not detected. Use Chrome on Android, the Meta Quest browser, or Samsung Internet in a VR headset.';
+    if (btn) btn.style.opacity = '.45';
+    return;
+  }
+  try {
+    const ok = await navigator.xr.isSessionSupported('immersive-vr');
+    if (ok) {
+      txt.textContent = '✓ VR headset detected and ready. Click Enter VR.';
+    } else {
+      txt.textContent = '⚠ Immersive VR not supported on this device.';
+      if (btn) btn.style.opacity = '.45';
+    }
+  } catch(e) {
+    txt.textContent = '⚠ Could not query VR support (' + e.message + ').';
+  }
+})();
+
+async function enterVR() {
+  if (xrSession) { xrSession.end(); return; }
+  const txt = document.getElementById('vr-support-txt');
+  if (!navigator.xr) {
+    if (txt) txt.textContent = '⚠ WebXR not available in this browser.';
+    return;
+  }
+  try {
+    if (!xrGLCanvas) {
+      xrGLCanvas = document.createElement('canvas');
+      xrGLCanvas.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-100';
+      document.body.appendChild(xrGLCanvas);
+      xrGL = xrGLCanvas.getContext('webgl', { xrCompatible: true })
+          || xrGLCanvas.getContext('webgl2', { xrCompatible: true });
+    }
+    const sessionInit = {
+      optionalFeatures: ['dom-overlay', 'hand-tracking', 'local-floor', 'bounded-floor'],
+      domOverlay: { root: document.getElementById('wr') }
+    };
+    const session = await navigator.xr.requestSession('immersive-vr', sessionInit);
+    xrSession = session;
+    if (xrGL) {
+      try { await xrGL.makeXRCompatible(); } catch(_) {}
+      xrLayer = new XRWebGLLayer(session, xrGL);
+      session.updateRenderState({ baseLayer: xrLayer });
+    }
+    xrRefSpace = await session.requestReferenceSpace('local-floor')
+                              .catch(() => session.requestReferenceSpace('local'));
+    session.addEventListener('end', onXREnd);
+    session.requestAnimationFrame(onXRFrame);
+    const tb = document.getElementById('tb-vr');
+    if (tb) { tb.classList.add('vr-on'); tb.textContent = '\u{1F97D} Exit VR'; }
+    const entBtn = document.getElementById('vr-enter-btn');
+    if (entBtn) entBtn.textContent = '⏹ Exit VR';
+    if (txt) txt.textContent = '\u{1F97D} VR session active — use controllers or hands to play.';
+    const badge = document.getElementById('xr-badge');
+    if (badge) badge.style.display = 'block';
+  } catch(e) {
+    if (txt) txt.textContent = '⚠ Could not start VR: ' + (e.message || String(e));
+    console.warn('WebXR session error:', e);
+  }
+}
+
+function onXREnd() {
+  xrSession = null; xrRefSpace = null; xrLayer = null;
+  xrLawrenceOn = false;
+  xrPinching   = { left: false, right: false };
+  Object.values(xrHandCursors).forEach(el => el && el.remove());
+  xrHandCursors = {};
+  hideLawrenceTip();
+  const tb = document.getElementById('tb-vr');
+  if (tb) { tb.classList.remove('vr-on'); tb.textContent = '\u{1F97D} VR Mode'; }
+  const entBtn = document.getElementById('vr-enter-btn');
+  if (entBtn) entBtn.textContent = '\u{1F97D} Enter VR';
+  const txt = document.getElementById('vr-support-txt');
+  if (txt) txt.textContent = 'VR session ended. Click Enter VR to start again.';
+  const badge = document.getElementById('xr-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function onXRFrame(time, frame) {
+  if (!xrSession) return;
+  xrSession.requestAnimationFrame(onXRFrame);
+  if (xrGL && xrLayer) {
+    xrGL.bindFramebuffer(xrGL.FRAMEBUFFER, xrLayer.framebuffer);
+    xrGL.clearColor(0.03, 0.0, 0.05, 0.9);
+    xrGL.clear(xrGL.COLOR_BUFFER_BIT | xrGL.DEPTH_BUFFER_BIT);
+  }
+  const viewerPose = frame.getViewerPose(xrRefSpace);
+  if (!viewerPose) return;
+  const view = viewerPose.views[0];
+  let lawrencePointed = false;
+  for (const src of xrSession.inputSources) {
+    if (src.hand) {
+      if (processXRHand(frame, src, view)) lawrencePointed = true;
+    }
+  }
+  if (lawrencePointed && !board[4][3]) {
+    if (!xrLawrenceOn) {
+      xrLawrenceOn = true;
+      const sq = document.querySelector('#board .sq:nth-child(36)');
+      if (sq) showLawrenceTip(sq);
+    }
+  } else {
+    if (xrLawrenceOn) { xrLawrenceOn = false; hideLawrenceTip(); }
+  }
+}
+
+function xrProjectToCSS(worldPos, view) {
+  function mv4(m, v) {
+    return [
+      m[0]*v[0]+m[4]*v[1]+m[8] *v[2]+m[12]*v[3],
+      m[1]*v[0]+m[5]*v[1]+m[9] *v[2]+m[13]*v[3],
+      m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
+      m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3]
+    ];
+  }
+  const vm   = view.transform.inverse.matrix;
+  const pm   = view.projectionMatrix;
+  const vpos = [worldPos.x, worldPos.y, worldPos.z, 1.0];
+  const cam  = mv4(vm, vpos);
+  const clip = mv4(pm, cam);
+  const w    = clip[3];
+  if (Math.abs(w) < 1e-6) return null;
+  return {
+    x: (clip[0]/w + 1) * 0.5 * window.innerWidth,
+    y: (1 - (clip[1]/w + 1) * 0.5) * window.innerHeight
+  };
+}
+
+function getHandCursor(handedness) {
+  if (!xrHandCursors[handedness]) {
+    const el = document.createElement('div');
+    el.className = 'xr-hand-cursor';
+    el.style.borderColor = handedness === 'right' ? '#4aaeff' : '#ff9a3e';
+    document.body.appendChild(el);
+    xrHandCursors[handedness] = el;
+  }
+  return xrHandCursors[handedness];
+}
+
+function processXRHand(frame, src, view) {
+  const hand = src.hand;
+  const side = src.handedness || 'right';
+  const indexTipJoint = hand.get('index-finger-tip');
+  const thumbTipJoint = hand.get('thumb-tip');
+  if (!indexTipJoint || !thumbTipJoint) return false;
+  const iPose = frame.getJointPose(indexTipJoint, xrRefSpace);
+  const tPose = frame.getJointPose(thumbTipJoint, xrRefSpace);
+  if (!iPose || !tPose) return false;
+  const ip = iPose.transform.position;
+  const tp = tPose.transform.position;
+  const pinchDist = Math.sqrt((ip.x-tp.x)**2+(ip.y-tp.y)**2+(ip.z-tp.z)**2);
+  const isPinching = pinchDist < 0.025;
+  const screen = xrProjectToCSS(ip, view);
+  if (!screen) return false;
+  const cur = getHandCursor(side);
+  cur.style.left = screen.x + 'px';
+  cur.style.top  = screen.y + 'px';
+  cur.style.background = isPinching ? 'rgba(120,200,255,.4)' : 'transparent';
+  cur.style.transform  = 'translate(-50%,-50%) scale(' + (isPinching ? 1.6 : 1) + ')';
+  const hitEl = document.elementFromPoint(screen.x, screen.y);
+  if (hitEl) {
+    const wasPin = xrPinching[side];
+    if (isPinching && !wasPin) {
+      hitEl.dispatchEvent(new PointerEvent('pointerenter', { bubbles:true, clientX:screen.x, clientY:screen.y }));
+      hitEl.dispatchEvent(new PointerEvent('pointerdown',  { bubbles:true, clientX:screen.x, clientY:screen.y, isPrimary:true }));
+      hitEl.dispatchEvent(new PointerEvent('pointerup',    { bubbles:true, clientX:screen.x, clientY:screen.y, isPrimary:true }));
+      hitEl.dispatchEvent(new MouseEvent('click',           { bubbles:true, clientX:screen.x, clientY:screen.y }));
+    } else if (!isPinching && wasPin) {
+      hitEl.dispatchEvent(new PointerEvent('pointerleave', { bubbles:false }));
+    } else if (!isPinching) {
+      hitEl.dispatchEvent(new PointerEvent('pointerenter', { bubbles:true, clientX:screen.x, clientY:screen.y }));
+    }
+  }
+  xrPinching[side] = isPinching;
+  return isOverLawrenceSquare(screen.x, screen.y);
+}
+
+function isOverLawrenceSquare(sx, sy) {
+  if (board[4][3]) return false;
+  const sq = document.querySelector('#board .sq:nth-child(36)');
+  if (!sq) return false;
+  const r = sq.getBoundingClientRect();
+  return sx >= r.left && sx <= r.right && sy >= r.top && sy <= r.bottom;
+}
+
+// ── LAWRENCE TOOLTIP ────────────────────────────────────────────────────────────────────────────
+function showLawrenceTip(eOrEl) {
+  const el  = (eOrEl && eOrEl.currentTarget) ? eOrEl.currentTarget : eOrEl;
+  const tip = document.getElementById('ltip');
+  const bwR = document.getElementById('bwrap').getBoundingClientRect();
+  const sqR = el.getBoundingClientRect();
+  const above = sqR.top - bwR.top - 46;
+  if (above >= 0) {
+    tip.style.top = above + 'px';
+  } else {
+    tip.style.top = (sqR.bottom - bwR.top + 8) + 'px';
+  }
+  tip.style.left = Math.max(0, sqR.left - bwR.left - 8) + 'px';
+  tip.style.display = 'block';
+}
+
+function hideLawrenceTip() {
+  document.getElementById('ltip').style.display = 'none';
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────────────────────────────────────────────
+function downloadGame() {
+  // Grab the full HTML of this page and offer it as a file download
+  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob  = new Blob([html], { type: 'text/html' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href     = url;
+  a.download = 'BoomRock-Chess.html';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+
+  // Brief visual feedback on the button
+  const btn = document.getElementById('dl-btn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="dl-icon">✓</span><span class="dl-label"><span class="dl-title">Saved!</span><span class="dl-price">Open offline</span></span>';
+  btn.style.background = 'linear-gradient(135deg,#0a4a6e 0%,#1a7abf 100%)';
+  btn.style.borderColor = '#3ab4ff';
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.style.background = '';
+    btn.style.borderColor = '';
+  }, 2500);
+}
+
+// ── NEW GAME ─────────────────────────────────────────────────────────────────────────────────
+function newGame() {
+  clearInterval(clkInt);
+  initBoard(); initClk(); render(); updateScore();
+  setSt('White to move');
+  document.getElementById('mlog').innerHTML = '';
+  document.getElementById('po').style.display = 'none';
+  setTimeout(() => playSeq(TUNES.start), 200);
+}
+
+newGame();
+</script>
+</body>
+</html>
+ (hit) lawrencePointed = true;
+    }
+    // Controller path: dom-overlay fires pointer events automatically,
+    // so existing pointerenter/leave on the Lawrence square work for free.
+  }
+
+  // Manage Lawrence tooltip state for hand-tracking
+  if (lawrencePointed && !board[4][3]) {
+    if (!xrLawrenceOn) {
+      xrLawrenceOn = true;
+      const lawrenceSq = document.querySelector('#board .sq:nth-child(36)');
+      if (lawrenceSq) showLawrenceTip(lawrenceSq);
+    }
+  } else {
+    if (xrLawrenceOn) {
+      xrLawrenceOn = false;
+      hideLawrenceTip();
+    }
+  }
+}
+
+// ── Project a WebXR world-space position → CSS pixel coords ──────────────
+function xrProjectToCSS(worldPos, view) {
+  // Column-major 4×4 helpers
+  function mv4(m, v) {
+    return [
+      m[0]*v[0]+m[4]*v[1]+m[8] *v[2]+m[12]*v[3],
+      m[1]*v[0]+m[5]*v[1]+m[9] *v[2]+m[13]*v[3],
+      m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
+      m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3]
+    ];
+  }
+  const vm   = view.transform.inverse.matrix;
+  const pm   = view.projectionMatrix;
+  const vpos = [worldPos.x, worldPos.y, worldPos.z, 1.0];
+  const cam  = mv4(vm, vpos);
+  const clip = mv4(pm, cam);
+  const w    = clip[3];
+  if (Math.abs(w) < 1e-6) return null;
+  const nx = clip[0] / w;   // [-1, 1]
+  const ny = clip[1] / w;   // [-1, 1]
+  // Convert NDC to CSS pixel space
+  return {
+    x: (nx + 1) * 0.5 * window.innerWidth,
+    y: (1 - (ny + 1) * 0.5) * window.innerHeight
+  };
+}
+
+// ── Get or create a hand-cursor dot element ────────────────────────────────
+function getHandCursor(handedness) {
+  if (!xrHandCursors[handedness]) {
+    const el = document.createElement('div');
+    el.className = 'xr-hand-cursor';
+    el.style.borderColor = handedness === 'right' ? '#4aaeff' : '#ff9a3e';
+    document.body.appendChild(el);
+    xrHandCursors[handedness] = el;
+  }
+  return xrHandCursors[handedness];
+}
+
+// ── Process one hand input source per frame ────────────────────────────────
+function processXRHand(frame, src, view) {
+  const hand     = src.hand;
+  const side     = src.handedness || 'right';
+
+  // Joints we need
+  const indexTipJoint = hand.get('index-finger-tip');
+  const thumbTipJoint = hand.get('thumb-tip');
+  if (!indexTipJoint || !thumbTipJoint) return false;
+
+  const iPose = frame.getJointPose(indexTipJoint, xrRefSpace);
+  const tPose = frame.getJointPose(thumbTipJoint, xrRefSpace);
+  if (!iPose || !tPose) return false;
+
+  const ip = iPose.transform.position;
+  const tp = tPose.transform.position;
+
+  // Euclidean distance between fingertips (metres)
+  const pinchDist = Math.sqrt(
+    (ip.x - tp.x) ** 2 + (ip.y - tp.y) ** 2 + (ip.z - tp.z) ** 2
+  );
+  const isPinching = pinchDist < 0.025; // 2.5 cm threshold
+
+  // Project index tip to 2-D screen coords
+  const screen = xrProjectToCSS(ip, view);
+  if (!screen) return false;
+
+  // Update visual hand-cursor dot
+  const cur = getHandCursor(side);
+  cur.style.left       = screen.x + 'px';
+  cur.style.top        = screen.y + 'px';
+  cur.style.background = isPinching ? 'rgba(120,200,255,.4)' : 'transparent';
+  cur.style.transform  = `translate(-50%,-50%) scale(${isPinching ? 1.6 : 1})`;
+
+  // Fire synthetic pointer events so every interactive element responds to hands
+  const hitEl = document.elementFromPoint(screen.x, screen.y);
+  if (hitEl) {
+    const wasPin = xrPinching[side];
+    if (isPinching && !wasPin) {
+      // Pinch start → pointerdown + click
+      hitEl.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true, clientX: screen.x, clientY: screen.y }));
+      hitEl.dispatchEvent(new PointerEvent('pointerdown',  { bubbles: true, clientX: screen.x, clientY: screen.y, isPrimary: true }));
+      hitEl.dispatchEvent(new PointerEvent('pointerup',    { bubbles: true, clientX: screen.x, clientY: screen.y, isPrimary: true }));
+      hitEl.dispatchEvent(new MouseEvent('click',           { bubbles: true, clientX: screen.x, clientY: screen.y }));
+    } else if (!isPinching && wasPin) {
+      // Pinch release → pointerleave
+      hitEl.dispatchEvent(new PointerEvent('pointerleave', { bubbles: false }));
+    } else if (!isPinching) {
+      // Hovering — fire pointerenter to let Lawrence tooltip trigger
+      hitEl.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true, clientX: screen.x, clientY: screen.y }));
+    }
+  }
+  xrPinching[side] = isPinching;
+
+  // Return true if the hand is pointing at the Lawrence square
+  return isOverLawrenceSquare(screen.x, screen.y);
+}
+
+// ── Check whether CSS coords overlap the d4 (Lawrence) square ─────────────
+function isOverLawrenceSquare(sx, sy) {
+  if (board[4][3]) return false;           // occupied — Lawrence not showing
+  // d4 is the 36th child (row 4 × 8 cols + col 3 + 1-based = 36)
+  const sq = document.querySelector('#board .sq:nth-child(36)');
+  if (!sq) return false;
+  const r  = sq.getBoundingClientRect();
+  return sx >= r.left && sx <= r.right && sy >= r.top && sy <= r.bottom;
+}
+
+// ── LAWRENCE TOOLTIP ────────────────────────────────────────────────────────
+function showLawrenceTip(eOrEl) {
+  const el  = (eOrEl && eOrEl.currentTarget) ? eOrEl.currentTarget : eOrEl;
+  const tip = document.getElementById('ltip');
+  const bwR = document.getElementById('bwrap').getBoundingClientRect();
+  const sqR = el.getBoundingClientRect();
+  // Prefer showing above the square; flip below if too close to the top of the board
+  const above = sqR.top - bwR.top - 46;
+  if (above >= 0) {
+    tip.style.top = above + 'px';
+    tip.style.removeProperty('--arrow');
+    tip.style.setProperty('--flip', '0');
+  } else {
+    tip.style.top = (sqR.bottom - bwR.top + 8) + 'px';
+  }
+  tip.style.left = Math.max(0, sqR.left - bwR.left - 8) + 'px';
+  tip.style.display = 'block';
+}
+function hideLawrenceTip() {
+  document.getElementById('ltip').style.display = 'none';
+}
+
+// ── NEW GAME ─────────────────────────────────────────────────────────────────
+function newGame() {
+  clearInterval(clkInt);
+  initBoard(); initClk(); render(); updateScore();
+  setSt('White to move');
+  document.getElementById('mlog').innerHTML = '';
+  document.getElementById('po').style.display = 'none';
+  setTimeout(() => playSeq(TUNES.start), 200);
+}
+
+newGame();
+</script>
+</body>
+</html>
